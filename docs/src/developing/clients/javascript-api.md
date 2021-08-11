@@ -73,9 +73,87 @@ console.log(solanaWeb3);
 
 ### Connecting to a wallet
 
-### Creating a Transaction
+To allow users to use your dApp or application on Solana, they will need to connect their wallet. Wallets are represented by [keyPairs](javascript-api.md#Keypair) in solana-web3.js, and can be used in sending transactions, interacting with programs, and signing information within the Solana ecosystem.
+
+There are two ways to obtain a keyPair:
+1. Generate a new keyPair
+2. Obtain a keyPair using the secret key
+
+You can obtain a new keyPair with the following:
+
+```javascript
+const {Keypair} = require("@solana/web3.js");
+
+let keyPair = Keypair.generate();
+```
+
+This will generate a brand new wallet for a user to fund and use within your application. 
+
+To allow a user to bring their own wallet to your application by accepting a secretKey to create the keyPair. You can allow entry of the secretKey using a textbox, and obtain the wallet with `Keypair.fromSecretKey(secretKey)`.
+
+```javascript
+const {Keypair} = require("@solana/web3.js");
+
+let secretKey = Uint8Array.from([
+  202, 171, 192, 129, 150, 189, 204, 241, 142,  71, 205,
+  2,  81,  97,   2, 176,  48,  81,  45,   1,  96, 138,
+  220, 132, 231, 131, 120,  77,  66,  40,  97, 172,  91,
+  245,  84, 221, 157, 190,   9, 145, 176, 130,  25,  43,
+  72, 107, 190, 229,  75,  88, 191, 136,   7, 167, 109,
+  91, 170, 164, 186,  15, 142,  36,  12,  23
+]);
+
+let keyPair = Keypair.fromSecretKey(secretKey);
+```
+
+Many wallets today allow users to bring their wallet using a variety of extensions or web wallets. You can find ways to connect to external wallets with the [wallet-adapter](https://github.com/solana-labs/wallet-adapter) library.
+
+### Creating and Sending Transactions
+
+In order to achieve anything in Solana, you need to create transactions. Transactions are a collection of signatures which can comprise of messages, accounts, or instructions. The order that instructions exist in a transaction determine the order they are executed.
+
+A transaction in Solana-Web3.js is created using the [`Transaction`](javascript-api.md#Transaction) object and adding desired messages, addresses, or instructions.
+
+Take the example of a transfer transaction:
+
+```javascript
+const {Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL} = require("@solana/web3.js");
+
+let keyPair = Keypair.generate();
+let transaction = new Transaction();
+
+transaction.add(
+  SystemProgram.transfer({
+    fromPubkey: keyPair.publicKey,
+    toPubkey: keyPair.publicKey,
+    lamports: LAMPORTS_PER_SOL
+  })
+);
+```
+
+The above code achieves creating a transaction ready to be signed and broadcasted to the network. The `SystemProgram.transfer` instruction was added to the transaction, containing the amount of lamports to send, and the to and from addressees.
+
+All that is left is to send the transaction over the network. You can accomplish sending a transaction by using `sendAndConfirmTransaction` if you wish to alert the user or do something after a transaction is finished, or use `sendTransaction` if you don't need to wait for the transaction to be confirmed.
+
+```javascript
+const {sendAndConfirmTransaction, clusterApiUrl} = require("@solana/web3.js");
+
+let connection = new Connection(clusterApiUrl('testnet'));
+
+sendAndConfirmTransaction(
+  connection,
+  transaction,
+  [keyPair]
+);
+```
+
+The above codes takes in a `TranasctionInstruction` using `SystemProgram`, creates a `Trasaction`, and sends it over the network.
 
 ### Interacting with Programs
+
+The previous section visits sending basic transactions. Interacting with programs is a more complex transaction, and can be done similarly.
+
+## Best Practices
 
 ## API by Example
 
