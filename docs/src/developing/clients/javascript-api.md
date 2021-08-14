@@ -278,64 +278,31 @@ web3.sendAndConfirmTransaction(connection, allocateTransaction, [keyPair]);
 
 ## Best Practices
 
+### Simulate Before Sending
+
+Before you send a transaction, you should [simulate the transaction](javascript-api.md#simulateTransaction). Simulating the transaction before sending a real transaction can reduce fees to the user of your dApp, as well as provide a better experience
+
+### Principle of Least Privileges
+
+When providing the accounts to interact with a program, determining which accounts need to be `isWritable` can be difficult. Best practice is to narrow down the accounts to only what requires `isWritable` in any transaction. If you do not, you run into issues where you could potentially give a program more power than the program needs and cause some security issues.
+
 ## API by Example
 
-### Account
+### Authorized
 
-***DEPRECATED*** since v1.10.0, please use [Keypair](javascript-api.md#Keypair) instead.
-
-[Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/Account.html)
-
-Accounts on Solana hold arbitrary amounts of data such as whether or not the account is executable or how many lamports are stored on the account. Account are represented by a 256 bit public key.
+Authorized is an object used when creating an authorized account for staking within Solana. You can designate a `staker` and `withdrawer` separately, allowing for a different account to withdraw other than the staker.
 
 #### Example Usage
 
 ```javascript
-const {Account} = require("@solana/web3.js");
+const {Authorized, Keypair} = require("@solana/web3.js")
 
-let account = new Account();
+let authorizedAccount = Keypair.generate();
 
-console.log(account);
-
-// Account {
-//   _keypair: {
-//     publicKey: Uint8Array(32) [
-//       161,  11, 126, 129,  80, 209,  62, 74,
-//       101,  13, 106, 187,  79,  99, 163, 45,
-//       143, 201,  17, 227,  63, 239,  86, 10,
-//       184, 137,   7, 226, 131, 126, 120, 90
-//     ],
-//     secretKey: Uint8Array(64) [
-//       111,  52,  11, 68,  37,  98, 130, 244,  94,  33, 243,
-//        34,  46,  42, 98, 222, 121, 107,  50,  79,  53, 192,
-//       124, 197,  45, 25, 232, 147,  36,  20, 222, 160, 161,
-//        11, 126, 129, 80, 209,  62,  74, 101,  13, 106, 187,
-//        79,  99, 163, 45, 143, 201,  17, 227,  63, 239,  86,
-//        10, 184, 137,  7, 226, 131, 126, 120,  90
-//     ]
-//   }
-// }
-
-console.log(account.publicKey.toBase58());
-
-//BqeogTgggg2GyWcLWydUzk2opmZECzKLHYJNsTjmUWGh
-
-console.log(account.secretKey.toJSON());
-
-// {
-//   type: 'Buffer',
-//   data: [
-//     111,  52,  11, 68,  37,  98, 130, 244,  94,  33, 243,
-//      34,  46,  42, 98, 222, 121, 107,  50,  79,  53, 192,
-//     124, 197,  45, 25, 232, 147,  36,  20, 222, 160, 161,
-//      11, 126, 129, 80, 209,  62,  74, 101,  13, 106, 187,
-//      79,  99, 163, 45, 143, 201,  17, 227,  63, 239,  86,
-//      10, 184, 137,  7, 226, 131, 126, 120,  90
-//   ]
-// }
+let authorized = new Authorized(authorizedAccount, authorizedAccount);
 ```
 
-### Authorized
+You can find more usage of the `Authorized` object under [`StakeProgram`](javascript-api.md#StakeProgram)
 
 ### BpfLoader
 
