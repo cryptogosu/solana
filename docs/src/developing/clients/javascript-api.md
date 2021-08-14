@@ -153,6 +153,129 @@ The above codes takes in a `TranasctionInstruction` using `SystemProgram`, creat
 
 The previous section visits sending basic transactions. Interacting with programs is a more complex transaction, and can be done similarly.
 
+Take the `SystemProgram` for example. The method signature for allocating space in your account on Solana looks like this:
+
+```rust
+pub fn allocate(
+    pubkey: &Pubkey, 
+    space: u64
+) -> Instruction
+```
+
+In Solana when you want to interact with a program you must first know all the accounts you will be interacting with.
+
+You must always provide every account that the program will be interacting with in the instruction. Not only that, but you must provide whether or not the account is `isSigner` or `isWritable`.
+
+In the `allocate` method above, a single account `pubKey` is required, as well as an amount of `space` for allocation. We know that the `allocate` method writes to the account by allocating space within it, making the `pubKey` required to be `isWriteable`. `isSigner` is required when you are designating the account that is running the instruction. In this case, the signer is the account calling to allocate space within itself.
+
+Let's look at how to call this instruction using solana-web3.js:
+
+```javascript
+let keyPair = web3.Keypair.generate();
+let connection = new web3.Connection(web3.clusterApiUrl('testnet'));
+```
+
+First we set up the account keyPair and connection so that we have an account to make transactions on the testnet.
+
+```javascript
+let allocateTransaction = new web3.Transaction();
+let keys = [{pubkey: keyPair.publicKey, isSigner: true, isWritable: true}];
+let params = { space: 100 };
+```
+
+We create the transaction `allocateTransaction`, keys, and params objects. `keys`
+represented all accounts that our `allocate` function will interact with. Since the `allocate` function also required space, we created `params` to be used later when invoked the `allocate` function.
+
+```javascript
+let allocateStruct = {
+  index: 8,
+  layout: struct([
+    u32('instruction'),
+    ns64('space'),
+  ])
+};
+```
+
+The above is created using `@solana/buffer-layout` in order to facilitate the payload creation. `allocate` takes in the parameter `space` and in order to interact with the function, we must provide the data as a Buffer format. The `buffer-layout` helps with allocating the buffer and encoding it correclty.
+
+Let's look at what is within this struct.
+
+`index` is set to 8, because the function `allocate` is in the 8th position in the instruction enum for `SystemProgram`.
+
+```rust
+pub enum SystemInstruction {
+    /** 0 **/CreateAccount {/**/},
+    /** 1 **/Assign {/**/},
+    /** 2 **/Transfer {/**/},
+    /** 3 **/CreateAccountWithSeed {/**/},
+    /** 4 **/AdvanceNonceAccount,
+    /** 5 **/WithdrawNonceAccount(u64),
+    /** 6 **/InitializeNonceAccount(Pubkey),
+    /** 7 **/AuthorizeNonceAccount(Pubkey),
+    /** 8 **/Allocate {/**/},
+    /** 9 **/AllocateWithSeed {/**/},
+    /** 10 **/AssignWithSeed {/**/},
+    /** 11 **/TransferWithSeed {/**/},
+}
+```
+
+The `layout` in allocate struct must always have `u32('instruction')` first when you are using it to call an instruction. `ns64('space')` is the argument for the `allocate` function. `n64` is the javascript equivalent to `u64` in rust.
+
+```javascript
+let data = Buffer.alloc(allocateStruct.layout.span);
+let layoutFields = Object.assign({instruction: allocateStruct.index}, params);
+allocateStruct.layout.encode(layoutFields, data);
+```
+
+Using the previously created bufferLayout, we can allocate a data buffer. We then assign our params `{ space: 100 }` so that it maps correctly to the layout, and encode it to the data buffer. Now the data is ready to be send to be program.
+
+```javascript
+allocateTransaction.add(new web3.TransactionInstruction({
+  keys,
+  programId: web3.SystemProgram.programId,
+  data,
+}));
+
+web3.sendAndConfirmTransaction(connection, allocateTransaction, [keyPair]);
+```
+
+Finally, we add the transaction instruction with all the account keys, data, and programId and broadcast the transaction to the network.
+
+The full code can be found below. **Note**: You may need to fund the `keyPair` in order to get it to run on your local network.
+
+```javascript
+const {struct, u32, ns64} = require("@solana/buffer-layout");
+const {Buffer} = require('buffer');
+const web3 = require("@solana/web3.js");
+
+let keyPair = web3.Keypair.generate();
+let connection = new web3.Connection(web3.clusterApiUrl('testnet'));
+
+let allocateTransaction = new web3.Transaction();
+let keys = [{pubkey: keyPair.publicKey, isSigner: true, isWritable: true}];
+let params = { space: 100 };
+
+let allocateStruct = {
+  index: 8,
+  layout: struct([
+    u32('instruction'),
+    ns64('space'),
+  ])
+};
+
+let data = Buffer.alloc(allocateStruct.layout.span);
+let layoutFields = Object.assign({instruction: allocateStruct.index}, params);
+allocateStruct.layout.encode(layoutFields, data);
+
+allocateTransaction.add(new web3.TransactionInstruction({
+  keys,
+  programId: web3.SystemProgram.programId,
+  data,
+}));
+
+web3.sendAndConfirmTransaction(connection, allocateTransaction, [keyPair]);
+```
+
 ## Best Practices
 
 ## API by Example
