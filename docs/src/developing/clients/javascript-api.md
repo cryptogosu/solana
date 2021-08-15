@@ -314,6 +314,47 @@ You can find more usage of the `Authorized` object under [`StakeProgram`](javasc
 
 ### EpochSchedule
 
+[Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/EpochSchedule.html)
+
+EpochSchedule gives you information on how many slots a leader is valid for, as well as what are the current rules for staking. The following are the parameters of an EpochSchedule:
+
+* `slotsPerEpoch`: The maximum slots per Epoch
+* `leaderScheduleSlotOffset`: The number of slots at the beginning of an epoch before the leader schedule is calculated
+* `warmup`: Whether or not the epochs will start short and grow
+* `firstNormalEpoch`: The first epoch length
+* `firstNormalSlot`: The number of slots during the first epoch 
+
+#### Example Usage
+
+```javascript
+const {EpochSchedule} = require("@solana/web3.js")
+
+const firstNormalEpoch = 14;
+const firstNormalSlot = 524256;
+const leaderScheduleSlotOffset = 432000;
+const slotsPerEpoch = 432000;
+const warmup = true;
+
+const epochSchedule = new EpochSchedule(
+  slotsPerEpoch,
+  leaderScheduleSlotOffset,
+  warmup,
+  firstNormalEpoch,
+  firstNormalSlot,
+);
+
+console.log(epochSchedule);
+// EpochSchedule {
+//   slotsPerEpoch: 432000,
+//   leaderScheduleSlotOffset: 432000,
+//   warmup: true,
+//   firstNormalEpoch: 14,
+//   firstNormalSlot: 524256
+// }
+```
+
+You can find more usage in [Connection](javascript-api.md#Connection)
+
 ### Keypair
 
 [Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/Keypair.html)
