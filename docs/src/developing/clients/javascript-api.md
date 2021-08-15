@@ -290,6 +290,8 @@ When providing the accounts to interact with a program, determining which accoun
 
 ### Authorized
 
+[Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/Authorized.html)
+
 Authorized is an object used when creating an authorized account for staking within Solana. You can designate a `staker` and `withdrawer` separately, allowing for a different account to withdraw other than the staker.
 
 #### Example Usage
@@ -315,6 +317,66 @@ You can find more usage of the `Authorized` object under [`StakeProgram`](javasc
 ### Keypair
 
 [Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/Keypair.html)
+
+Keypair is used to create an account with a public key and secret key within Solana. You can either generate, generate from a seed, or create from a secret key.
+
+#### Example Usage
+
+```javascript
+const {Keypair} = require("@solana/web3.js")
+
+let account = Keypair.generate();
+
+console.log(account.publicKey.toBase58());
+console.log(account.secretKey);
+
+// 2DVaHtcdTf7cm18Zm9VV8rKK4oSnjmTkKE6MiXe18Qsb
+// Uint8Array(64) [
+//   152,  43, 116, 211, 207,  41, 220,  33, 193, 168, 118,
+//    24, 176,  83, 206, 132,  47, 194,   2, 203, 186, 131,
+//   197, 228, 156, 170, 154,  41,  56,  76, 159, 124,  18,
+//    14, 247,  32, 210,  51, 102,  41,  43,  21,  12, 170,
+//   166, 210, 195, 188,  60, 220, 210,  96, 136, 158,   6,
+//   205, 189, 165, 112,  32, 200, 116, 164, 234
+// ]
+
+
+let seed = Uint8Array.from([70,60,102,100,70,60,102,100,70,60,102,100,70,60,102,100,70,60,102,100,70,60,102,100,70,60,102,100,70,60,102,100]);
+let accountFromSeed = Keypair.fromSeed(seed);
+
+console.log(accountFromSeed.publicKey.toBase58());
+console.log(accountFromSeed.secretKey);
+
+// 3LDverZtSC9Duw2wyGC1C38atMG49toPNW9jtGJiw9Ar
+// Uint8Array(64) [
+//    70,  60, 102, 100,  70,  60, 102, 100,  70,  60, 102,
+//   100,  70,  60, 102, 100,  70,  60, 102, 100,  70,  60,
+//   102, 100,  70,  60, 102, 100,  70,  60, 102, 100,  34,
+//   164,   6,  12,   9, 193, 196,  30, 148, 122, 175,  11,
+//    28, 243, 209,  82, 240, 184,  30,  31,  56, 223, 236,
+//   227,  60,  72, 215,  47, 208, 209, 162,  59
+// ]
+
+
+let accountFromSecret = Keypair.fromSecretKey(account.secretKey);
+
+console.log(accountFromSecret.publicKey.toBase58());
+console.log(accountFromSecret.secretKey);
+
+// 2DVaHtcdTf7cm18Zm9VV8rKK4oSnjmTkKE6MiXe18Qsb
+// Uint8Array(64) [
+//   152,  43, 116, 211, 207,  41, 220,  33, 193, 168, 118,
+//    24, 176,  83, 206, 132,  47, 194,   2, 203, 186, 131,
+//   197, 228, 156, 170, 154,  41,  56,  76, 159, 124,  18,
+//    14, 247,  32, 210,  51, 102,  41,  43,  21,  12, 170,
+//   166, 210, 195, 188,  60, 220, 210,  96, 136, 158,   6,
+//   205, 189, 165, 112,  32, 200, 116, 164, 234
+// ]
+```
+
+Using `generate` generates a random Keypair for use as an account on Solana. Using `fromSeed`, you can generate a Keypair using a deterministic constructor. `fromSecret` creates a Keypair from a secret Uint8array. You can see that the publicKey for the `generate` Keypair and `fromSecret` Keypair are the same, because I used the secret from the `generate` Keypair in `fromSecret`.
+
+**Warning**: Do not use `fromSeed` unless you are creating a seed with high entropy. Do not share your seed. Treat the seed like you would a private key.
 
 #### Example Usage
 
