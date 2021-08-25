@@ -147,7 +147,7 @@ sendAndConfirmTransaction(
 );
 ```
 
-The above codes takes in a `TranasctionInstruction` using `SystemProgram`, creates a `Trasaction`, and sends it over the network.
+The above codes takes in a `TransactionInstruction` using `SystemProgram`, creates a `Transaction`, and sends it over the network.
 
 ### Interacting with Programs
 
@@ -285,6 +285,10 @@ Before you send a transaction, you should [simulate the transaction](javascript-
 ### Principle of Least Privileges
 
 When providing the accounts to interact with a program, determining which accounts need to be `isWritable` can be difficult. Best practice is to narrow down the accounts to only what requires `isWritable` in any transaction. If you do not, you run into issues where you could potentially give a program more power than the program needs and cause some security issues.
+
+### Secret Key Management
+
+The general recommendation is to not have user input the secret key, but rather have the user either use a separate wallet and handle the account custodial services by the wallet. You can find more examples in the [solana wallet adapter](https://github.com/solana-labs/wallet-adapter).
 
 ## API by Example
 
@@ -425,9 +429,118 @@ Using `generate` generates a random Keypair for use as an account on Solana. Usi
 
 ### Lockup
 
+[Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/Lockup.html)
+
+Lockup is used in conjuction with the [StakeProgram](javascript-api.md#StakeProgram) in order to create an account. The Lockup is used to determine how long the stake will be locked, or unable to be retrieved. If the Lockup is set to 0 for both epoch and the unix timestamp, the lockup will be disabled for the stake account.
+
+#### Example Usage
+
+```javascript
+const {Authorized, Keypair, Lockup, StakeProgram} = require("@solana/web3.js");
+
+let account = Keypair.generate();
+let stakeAccount = Keypair.generate();
+let authorized = new Authorized(account.publicKey, account.publicKey);
+let lockup = new Lockup(0, 0, account.publicKey);
+
+let createStakeAccountInstruction = StakeProgram.createAccount({
+    fromPubkey: account.publicKey,
+    authorized: authorized,
+    lamports: 1000,
+    lockup: lockup,
+    stakePubkey: stakeAccount.publicKey
+});
+```
+The above code creates a `createStakeAccountInstruction` to be used when creating an account with the `StakeProgram`. The Lockup is set to 0 for both the epoch and unix timestamp, disabling lockup for the account. 
+
+See [StakeProgram](javascript-api.md#StakeProgram) for more.
+
 ### Message
 
 ### NonceAccount
+
+[Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/NonceAccount.html)
+
+Normally a transaction is rejected if a transaction's `recentBlockhash` field is too old. In order to provide for certain custodial services, Nonce Accounts are used.
+
+You can create a nonce account by first creating a normal account, then using `SystemProgram` in order to make the account a Nonce Account.
+
+#### Example Usage
+
+```javascript
+const web3 = require('@solana/web3.js');
+
+// Create connection
+const connection = new web3.Connection(
+web3.clusterApiUrl('testnet'),
+'confirmed',
+);
+
+// Generate accounts
+const account = web3.Keypair.generate();
+const nonceAccount = web3.Keypair.generate();
+
+// Fund account
+const airdropSignature = await connection.requestAirdrop(
+account.publicKey,
+web3.LAMPORTS_PER_SOL,
+);
+
+await connection.confirmTransaction(airdropSignature);
+
+// Get Minimum amount for rent exemption
+const minimumAmount = await connection.getMinimumBalanceForRentExemption(
+web3.NONCE_ACCOUNT_LENGTH,
+);
+
+// Form CreateNonceAccount transaction
+const transaction = new web3.Transaction().add(
+web3.SystemProgram.createNonceAccount({
+    fromPubkey: account.publicKey,
+    noncePubkey: nonceAccount.publicKey,
+    authorizedPubkey: account.publicKey,
+    lamports: minimumAmount,
+}),
+);
+// Create Nonce Account
+await web3.sendAndConfirmTransaction(
+    connection,
+    transaction,
+    [account, nonceAccount]
+);
+
+const nonceAccountData = await connection.getNonce(
+nonceAccount.publicKey,
+'confirmed',
+);
+
+console.log(nonceAccountData);
+// NonceAccount {
+//   authorizedPubkey: PublicKey {
+//     _bn: <BN: 919981a5497e8f85c805547439ae59f607ea625b86b1138ea6e41a68ab8ee038>
+//   },
+//   nonce: '93zGZbhMmReyz4YHXjt2gHsvu5tjARsyukxD4xnaWaBq',
+//   feeCalculator: { lamportsPerSignature: 5000 }
+// }
+
+const nonceAccountInfo = await connection.getAccountInfo(
+    nonceAccount.publicKey,
+    'confirmed'
+);
+
+const nonceAccountFromInfo = web3.NonceAccount.fromAccountData(nonceAccountInfo.data);
+
+console.log(nonceAccountFromInfo);
+// NonceAccount {
+//   authorizedPubkey: PublicKey {
+//     _bn: <BN: 919981a5497e8f85c805547439ae59f607ea625b86b1138ea6e41a68ab8ee038>
+//   },
+//   nonce: '93zGZbhMmReyz4YHXjt2gHsvu5tjARsyukxD4xnaWaBq',
+//   feeCalculator: { lamportsPerSignature: 5000 }
+// }
+```
+
+The above example shows both how to create a `NonceAccount` using `SystemProgram.createNonceAccount`, as well as how to retrieve the `NonceAccount` from accountInfo. Using the nonce, you can create transactions offline with the nonce in place of the `recentBlockhash`.
 
 ### PublicKey
 
