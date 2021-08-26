@@ -10,13 +10,11 @@ The Solana-Web3.js library aims to provide complete coverage of Solana. The libr
 
 | Term | Definition |
 |-------------|------------------------|
+| Program     | Code written to interpret instructions. |
 | Instruction | The smallest unit of a program that a client can include in a transaction. Within its processing code, an instruction may contain one or more cross-program invocations. |
-| Program     | The code that interprets instructions.                                                                                                                                   |
-| Transaction | One or more instructions signed by the client using one or more keypairs and executed atomically with only two possible outcomes: success or failure.                    |
+| Transaction | One or more instructions signed by the client using one or more keypairs and executed atomically with only two possible outcomes: success or failure. |
 
 For the full list of terms, see [Solana terminology](https://docs.solana.com/terminology#cross-program-invocation)
-
-## Features
 
 ## Getting Started
 
@@ -40,7 +38,7 @@ $ npm install --save @solana/web3.js
 <!-- Development (un-minified) -->
 <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 
-<!-- Production (un-minified) -->
+<!-- Production (minified) -->
 <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 ```
 
@@ -71,25 +69,25 @@ console.log(solanaWeb3);
 
 ## Quickstart
 
-### Connecting to a wallet
+### Connecting to a Wallet
 
-To allow users to use your dApp or application on Solana, they will need to connect their wallet. Wallets are represented by [keyPairs](javascript-api.md#Keypair) in solana-web3.js, and can be used in sending transactions, interacting with programs, and signing information within the Solana ecosystem.
+To allow users to use your dApp or application on Solana, they will need to connect their wallet. A [Keypair](javascript-api.md#Keypair) is a private key with a matching public key, used to sign transactions.
 
-There are two ways to obtain a keyPair:
-1. Generate a new keyPair
-2. Obtain a keyPair using the secret key
+There are two ways to obtain a Keypair:
+1. Generate a new Keypair
+2. Obtain a Keypair using the secret key
 
-You can obtain a new keyPair with the following:
+You can obtain a new Keypair with the following:
 
 ```javascript
 const {Keypair} = require("@solana/web3.js");
 
-let keyPair = Keypair.generate();
+let keypair = Keypair.generate();
 ```
 
-This will generate a brand new wallet for a user to fund and use within your application. 
+This will generate a brand new keypair for a user to fund and use within your application. 
 
-To allow a user to bring their own wallet to your application by accepting a secretKey to create the keyPair. You can allow entry of the secretKey using a textbox, and obtain the wallet with `Keypair.fromSecretKey(secretKey)`.
+To allow a user to bring their keypair to your application by accepting a secretKey to create the keypair. You can allow entry of the secretKey using a textbox, and obtain the keypair with `Keypair.fromSecretKey(secretKey)`.
 
 ```javascript
 const {Keypair} = require("@solana/web3.js");
@@ -103,14 +101,14 @@ let secretKey = Uint8Array.from([
   91, 170, 164, 186,  15, 142,  36,  12,  23
 ]);
 
-let keyPair = Keypair.fromSecretKey(secretKey);
+let keypair = Keypair.fromSecretKey(secretKey);
 ```
 
-Many wallets today allow users to bring their wallet using a variety of extensions or web wallets. You can find ways to connect to external wallets with the [wallet-adapter](https://github.com/solana-labs/wallet-adapter) library.
+Many wallets today allow users to bring their keypairs using a variety of extensions or web wallets. You can find ways to connect to external wallets with the [wallet-adapter](https://github.com/solana-labs/wallet-adapter) library.
 
 ### Creating and Sending Transactions
 
-In order to achieve anything in Solana, you need to create transactions. Transactions are a collection of signatures which can comprise of messages, accounts, or instructions. The order that instructions exist in a transaction determine the order they are executed.
+To interact with programs on Solana, you create, sign, and send transactions to the network. Transactions are collections of instructions with signatures. The order that instructions exist in a transaction determines the order they are executed.
 
 A transaction in Solana-Web3.js is created using the [`Transaction`](javascript-api.md#Transaction) object and adding desired messages, addresses, or instructions.
 
@@ -119,19 +117,19 @@ Take the example of a transfer transaction:
 ```javascript
 const {Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL} = require("@solana/web3.js");
 
-let keyPair = Keypair.generate();
+let keypair = Keypair.generate();
 let transaction = new Transaction();
 
 transaction.add(
   SystemProgram.transfer({
-    fromPubkey: keyPair.publicKey,
-    toPubkey: keyPair.publicKey,
+    fromPubkey: keypair.publicKey,
+    toPubkey: keypair.publicKey,
     lamports: LAMPORTS_PER_SOL
   })
 );
 ```
 
-The above code achieves creating a transaction ready to be signed and broadcasted to the network. The `SystemProgram.transfer` instruction was added to the transaction, containing the amount of lamports to send, and the to and from addressees.
+The above code achieves creating a transaction ready to be signed and broadcasted to the network. The `SystemProgram.transfer` instruction was added to the transaction, containing the amount of lamports to send, and the to and from addresses.
 
 All that is left is to send the transaction over the network. You can accomplish sending a transaction by using `sendAndConfirmTransaction` if you wish to alert the user or do something after a transaction is finished, or use `sendTransaction` if you don't need to wait for the transaction to be confirmed.
 
@@ -143,15 +141,15 @@ let connection = new Connection(clusterApiUrl('testnet'));
 sendAndConfirmTransaction(
   connection,
   transaction,
-  [keyPair]
+  [keypair]
 );
 ```
 
-The above codes takes in a `TransactionInstruction` using `SystemProgram`, creates a `Transaction`, and sends it over the network.
+The above code takes in a `TransactionInstruction` using `SystemProgram`, creates a `Transaction`, and sends it over the network.
 
 ### Interacting with Programs
 
-The previous section visits sending basic transactions. Interacting with programs is a more complex transaction, and can be done similarly.
+The previous section visits sending basic transactions. At the time of writing programs on Solana are either written in Rust or C. Interacting with programs is a more complex transaction, and can be done similarly.
 
 Take the `SystemProgram` for example. The method signature for allocating space in your account on Solana looks like this:
 
@@ -164,27 +162,26 @@ pub fn allocate(
 
 In Solana when you want to interact with a program you must first know all the accounts you will be interacting with.
 
-You must always provide every account that the program will be interacting with in the instruction. Not only that, but you must provide whether or not the account is `isSigner` or `isWritable`.
+You must always provide every account that the program will be interacting within the instruction. Not only that, but you must provide whether or not the account is `isSigner` or `isWritable`.
 
 In the `allocate` method above, a single account `pubKey` is required, as well as an amount of `space` for allocation. We know that the `allocate` method writes to the account by allocating space within it, making the `pubKey` required to be `isWriteable`. `isSigner` is required when you are designating the account that is running the instruction. In this case, the signer is the account calling to allocate space within itself.
 
 Let's look at how to call this instruction using solana-web3.js:
 
 ```javascript
-let keyPair = web3.Keypair.generate();
+let keypair = web3.Keypair.generate();
 let connection = new web3.Connection(web3.clusterApiUrl('testnet'));
 ```
 
-First we set up the account keyPair and connection so that we have an account to make transactions on the testnet.
+First, we set up the account Keypair and connection so that we have an account to make transactions on the testnet.
 
 ```javascript
 let allocateTransaction = new web3.Transaction();
-let keys = [{pubkey: keyPair.publicKey, isSigner: true, isWritable: true}];
+let keys = [{pubkey: keypair.publicKey, isSigner: true, isWritable: true}];
 let params = { space: 100 };
 ```
 
-We create the transaction `allocateTransaction`, keys, and params objects. `keys`
-represented all accounts that our `allocate` function will interact with. Since the `allocate` function also required space, we created `params` to be used later when invoked the `allocate` function.
+We create the transaction `allocateTransaction`, keys, and params objects. `keys` represents all accounts that our `allocate` function will interact with. Since the `allocate` function also required space, we created `params` to be used later when invoked the `allocate` function.
 
 ```javascript
 let allocateStruct = {
@@ -196,13 +193,18 @@ let allocateStruct = {
 };
 ```
 
-The above is created using `@solana/buffer-layout` in order to facilitate the payload creation. `allocate` takes in the parameter `space` and in order to interact with the function, we must provide the data as a Buffer format. The `buffer-layout` helps with allocating the buffer and encoding it correclty.
+The above is created using `@solana/buffer-layout` to facilitate the payload creation. `allocate` takes in the parameter `space` and to interact with the function, we must provide the data as a Buffer format. The `buffer-layout` helps with allocating the buffer and encoding it correctly.
 
-Let's look at what is within this struct.
+Let's break down this struct.
 
-`index` is set to 8, because the function `allocate` is in the 8th position in the instruction enum for `SystemProgram`.
+```javascript
+index: 8
+```
+
+`index` is set to 8 because the function `allocate` is in the 8th position in the instruction enum for `SystemProgram`.
 
 ```rust
+/* https://github.com/solana-labs/solana/blob/21bc43ed58c63c827ba4db30426965ef3e807180/sdk/program/src/system_instruction.rs#L142-L305 */
 pub enum SystemInstruction {
     /** 0 **/CreateAccount {/**/},
     /** 1 **/Assign {/**/},
@@ -219,7 +221,17 @@ pub enum SystemInstruction {
 }
 ```
 
-The `layout` in allocate struct must always have `u32('instruction')` first when you are using it to call an instruction. `ns64('space')` is the argument for the `allocate` function. `n64` is the javascript equivalent to `u64` in rust.
+```javascript
+u32('instruction')
+```
+
+The `layout` in the allocate struct must always have `u32('instruction')` first when you are using it to call an instruction.
+
+```javascript
+ns64('space')
+```
+
+`ns64('space')` is the argument for the `allocate` function. You can see in the original `allocate` function in Rust that space was of the type `u64`. `u64` is an unsigned 64bit integer. Javascript/Typescript by default only provides up to 53bit integers. `ns64` comes from `@solana/buffer-layout` to help with type conversions between Rust and Javascript. You can find more type conversions between Rust/C and Javascript at [solana-labs/buffer-layout](https://github.com/solana-labs/buffer-layout).
 
 ```javascript
 let data = Buffer.alloc(allocateStruct.layout.span);
@@ -227,7 +239,7 @@ let layoutFields = Object.assign({instruction: allocateStruct.index}, params);
 allocateStruct.layout.encode(layoutFields, data);
 ```
 
-Using the previously created bufferLayout, we can allocate a data buffer. We then assign our params `{ space: 100 }` so that it maps correctly to the layout, and encode it to the data buffer. Now the data is ready to be send to be program.
+Using the previously created bufferLayout, we can allocate a data buffer. We then assign our params `{ space: 100 }` so that it maps correctly to the layout, and encodes it to the data buffer. Now the data is ready to be sent to be program.
 
 ```javascript
 allocateTransaction.add(new web3.TransactionInstruction({
@@ -236,23 +248,23 @@ allocateTransaction.add(new web3.TransactionInstruction({
   data,
 }));
 
-web3.sendAndConfirmTransaction(connection, allocateTransaction, [keyPair]);
+web3.sendAndConfirmTransaction(connection, allocateTransaction, [keypair]);
 ```
 
 Finally, we add the transaction instruction with all the account keys, data, and programId and broadcast the transaction to the network.
 
-The full code can be found below. **Note**: You may need to fund the `keyPair` in order to get it to run on your local network.
+The full code can be found below. **Note**: You may need to fund the `Keypair` to get it to run on your local network.
 
 ```javascript
 const {struct, u32, ns64} = require("@solana/buffer-layout");
 const {Buffer} = require('buffer');
 const web3 = require("@solana/web3.js");
 
-let keyPair = web3.Keypair.generate();
+let keypair = web3.Keypair.generate();
 let connection = new web3.Connection(web3.clusterApiUrl('testnet'));
 
 let allocateTransaction = new web3.Transaction();
-let keys = [{pubkey: keyPair.publicKey, isSigner: true, isWritable: true}];
+let keys = [{pubkey: keypair.publicKey, isSigner: true, isWritable: true}];
 let params = { space: 100 };
 
 let allocateStruct = {
@@ -273,22 +285,18 @@ allocateTransaction.add(new web3.TransactionInstruction({
   data,
 }));
 
-web3.sendAndConfirmTransaction(connection, allocateTransaction, [keyPair]);
+web3.sendAndConfirmTransaction(connection, allocateTransaction, [keypair]);
 ```
 
 ## Best Practices
 
-### Simulate Before Sending
-
-Before you send a transaction, you should [simulate the transaction](javascript-api.md#simulateTransaction). Simulating the transaction before sending a real transaction can reduce fees to the user of your dApp, as well as provide a better experience
-
 ### Principle of Least Privileges
 
-When providing the accounts to interact with a program, determining which accounts need to be `isWritable` can be difficult. Best practice is to narrow down the accounts to only what requires `isWritable` in any transaction. If you do not, you run into issues where you could potentially give a program more power than the program needs and cause some security issues.
+When providing the accounts to interact with a program, determining which accounts need to be `isWritable` can be difficult. The best practice is to narrow down the accounts to only what requires `isWritable` in any transaction. If you do not, you run into issues where you could potentially give a program more power than the program needs and cause some security issues.
 
 ### Secret Key Management
 
-The general recommendation is to not have user input the secret key, but rather have the user either use a separate wallet and handle the account custodial services by the wallet. You can find more examples in the [solana wallet adapter](https://github.com/solana-labs/wallet-adapter).
+The general recommendation is to not have the user input the secret key, but rather have the user either use a separate wallet and handle the account custodial services by the wallet. You can find more examples in the [solana wallet adapter](https://github.com/solana-labs/wallet-adapter).
 
 ## API by Example
 
@@ -363,7 +371,7 @@ You can find more usage in [Connection](javascript-api.md#Connection)
 
 [Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/Keypair.html)
 
-Keypair is used to create an account with a public key and secret key within Solana. You can either generate, generate from a seed, or create from a secret key.
+The keypair is used to create an account with a public key and secret key within Solana. You can either generate, generate from a seed, or create from a secret key.
 
 #### Example Usage
 
@@ -419,7 +427,7 @@ console.log(accountFromSecret.secretKey);
 // ]
 ```
 
-Using `generate` generates a random Keypair for use as an account on Solana. Using `fromSeed`, you can generate a Keypair using a deterministic constructor. `fromSecret` creates a Keypair from a secret Uint8array. You can see that the publicKey for the `generate` Keypair and `fromSecret` Keypair are the same, because I used the secret from the `generate` Keypair in `fromSecret`.
+Using `generate` generates a random Keypair for use as an account on Solana. Using `fromSeed`, you can generate a Keypair using a deterministic constructor. `fromSecret` creates a Keypair from a secret Uint8array. You can see that the publicKey for the `generate` Keypair and `fromSecret` Keypair are the same because the secret from the `generate` Keypair is used in `fromSecret`.
 
 **Warning**: Do not use `fromSeed` unless you are creating a seed with high entropy. Do not share your seed. Treat the seed like you would a private key.
 
@@ -431,7 +439,7 @@ Using `generate` generates a random Keypair for use as an account on Solana. Usi
 
 [Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/Lockup.html)
 
-Lockup is used in conjuction with the [StakeProgram](javascript-api.md#StakeProgram) in order to create an account. The Lockup is used to determine how long the stake will be locked, or unable to be retrieved. If the Lockup is set to 0 for both epoch and the unix timestamp, the lockup will be disabled for the stake account.
+Lockup is used in conjunction with the [StakeProgram](javascript-api.md#StakeProgram) to create an account. The Lockup is used to determine how long the stake will be locked, or unable to be retrieved. If the Lockup is set to 0 for both epoch and the unix timestamp, the lockup will be disabled for the stake account.
 
 #### Example Usage
 
@@ -461,9 +469,9 @@ See [StakeProgram](javascript-api.md#StakeProgram) for more.
 
 [Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/NonceAccount.html)
 
-Normally a transaction is rejected if a transaction's `recentBlockhash` field is too old. In order to provide for certain custodial services, Nonce Accounts are used.
+Normally a transaction is rejected if a transaction's `recentBlockhash` field is too old. To provide for certain custodial services, Nonce Accounts are used.
 
-You can create a nonce account by first creating a normal account, then using `SystemProgram` in order to make the account a Nonce Account.
+You can create a nonce account by first creating a normal account, then using `SystemProgram` to make the account a Nonce Account.
 
 #### Example Usage
 
@@ -543,6 +551,18 @@ console.log(nonceAccountFromInfo);
 The above example shows both how to create a `NonceAccount` using `SystemProgram.createNonceAccount`, as well as how to retrieve the `NonceAccount` from accountInfo. Using the nonce, you can create transactions offline with the nonce in place of the `recentBlockhash`.
 
 ### PublicKey
+
+[Source Documentation](https://solana-labs.github.io/solana-web3.js/classes/PublicKey.html)
+
+PublicKey is used throughout `@solana/web3.js` in transactions, keypairs, and programs. You require publickey when listing each account in a transaction and as a general identifier on Solana.
+
+A PublicKey can be created with a base58 encoded string, buffer, Uint8Array, number, and an array of numbers.
+
+#### Example Usage
+
+```javascript
+
+```
 
 ### Secp256k1Program
 
