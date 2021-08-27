@@ -10,9 +10,9 @@ The Solana-Web3.js library aims to provide complete coverage of Solana. The libr
 
 | Term | Definition |
 |-------------|------------------------|
-| Program     | Code written to interpret instructions. |
+| Program     | Stateless executeable code written to interpret instructions. Programs are capable of performing actions in based on the instructions provided. |
 | Instruction | The smallest unit of a program that a client can include in a transaction. Within its processing code, an instruction may contain one or more cross-program invocations. |
-| Transaction | One or more instructions signed by the client using one or more keypairs and executed atomically with only two possible outcomes: success or failure. |
+| Transaction | One or more instructions signed by the client using one or more Keypairs and executed atomically with only two possible outcomes: success or failure. |
 
 For the full list of terms, see [Solana terminology](https://docs.solana.com/terminology#cross-program-invocation)
 
@@ -71,7 +71,7 @@ console.log(solanaWeb3);
 
 ### Connecting to a Wallet
 
-To allow users to use your dApp or application on Solana, they will need to connect their wallet. A [Keypair](javascript-api.md#Keypair) is a private key with a matching public key, used to sign transactions.
+To allow users to use your dApp or application on Solana, they will need to connect their wallet. A Keypair is a private key with a matching public key, used to sign transactions.
 
 There are two ways to obtain a Keypair:
 1. Generate a new Keypair
@@ -85,9 +85,9 @@ const {Keypair} = require("@solana/web3.js");
 let keypair = Keypair.generate();
 ```
 
-This will generate a brand new keypair for a user to fund and use within your application. 
+This will generate a brand new Keypair for a user to fund and use within your application. 
 
-To allow a user to bring their keypair to your application by accepting a secretKey to create the keypair. You can allow entry of the secretKey using a textbox, and obtain the keypair with `Keypair.fromSecretKey(secretKey)`.
+You can allow entry of the secretKey using a textbox, and obtain the Keypair with `Keypair.fromSecretKey(secretKey)`.
 
 ```javascript
 const {Keypair} = require("@solana/web3.js");
@@ -104,7 +104,7 @@ let secretKey = Uint8Array.from([
 let keypair = Keypair.fromSecretKey(secretKey);
 ```
 
-Many wallets today allow users to bring their keypairs using a variety of extensions or web wallets. You can find ways to connect to external wallets with the [wallet-adapter](https://github.com/solana-labs/wallet-adapter) library.
+Many wallets today allow users to bring their Keypair using a variety of extensions or web wallets. The general recommendation is to use wallets, not text entry, to obtain the Keypair for signing. You can find ways to connect to external wallets with the [wallet-adapter](https://github.com/solana-labs/wallet-adapter) library.
 
 ### Creating and Sending Transactions
 
@@ -129,7 +129,7 @@ transaction.add(
 );
 ```
 
-The above code achieves creating a transaction ready to be signed and broadcasted to the network. The `SystemProgram.transfer` instruction was added to the transaction, containing the amount of lamports to send, and the to and from addresses.
+The above code achieves creating a transaction ready to be signed and broadcasted to the network. The `SystemProgram.transfer` instruction was added to the transaction, containing the amount of lamports to send, and the `to` and `from` public keys.
 
 All that is left is to send the transaction over the network. You can accomplish sending a transaction by using `sendAndConfirmTransaction` if you wish to alert the user or do something after a transaction is finished, or use `sendTransaction` if you don't need to wait for the transaction to be confirmed.
 
@@ -145,13 +145,13 @@ sendAndConfirmTransaction(
 );
 ```
 
-The above code takes in a `TransactionInstruction` using `SystemProgram`, creates a `Transaction`, and sends it over the network.
+The above code takes in a `TransactionInstruction` using `SystemProgram`, creates a `Transaction`, and sends it over the network. You use `Connection` in order to define with Solana network you are connecting to, namely `mainnet-beta`, `testnet`, or `devnet`.
 
 ### Interacting with Programs
 
-The previous section visits sending basic transactions. At the time of writing programs on Solana are either written in Rust or C. Interacting with programs is a more complex transaction, and can be done similarly.
+The previous section visits sending basic transactions. Interacting with programs is a more complex transaction, and can be done similarly. At the time of writing programs on Solana are either written in Rust or C.
 
-Take the `SystemProgram` for example. The method signature for allocating space in your account on Solana looks like this:
+Let's look at the `SystemProgram`. The method signature for allocating space in your account on Solana in Rust looks like this:
 
 ```rust
 pub fn allocate(
@@ -181,7 +181,7 @@ let keys = [{pubkey: keypair.publicKey, isSigner: true, isWritable: true}];
 let params = { space: 100 };
 ```
 
-We create the transaction `allocateTransaction`, keys, and params objects. `keys` represents all accounts that our `allocate` function will interact with. Since the `allocate` function also required space, we created `params` to be used later when invoked the `allocate` function.
+We create the transaction `allocateTransaction`, keys, and params objects. `keys` represents all accounts that the program's `allocate` function will interact with. Since the `allocate` function also required space, we created `params` to be used later when invoking the `allocate` function.
 
 ```javascript
 let allocateStruct = {
@@ -193,12 +193,18 @@ let allocateStruct = {
 };
 ```
 
-The above is created using `@solana/buffer-layout` to facilitate the payload creation. `allocate` takes in the parameter `space` and to interact with the function, we must provide the data as a Buffer format. The `buffer-layout` helps with allocating the buffer and encoding it correctly.
+The above is created using `@solana/buffer-layout` to facilitate the payload creation. The `allocate` function takes in the parameter `space`. To interact with the function we must provide the data as a Buffer format. The `buffer-layout` library helps with allocating the buffer and encoding it correctly for Rust programs on Solana to interpret.
 
 Let's break down this struct.
 
 ```javascript
-index: 8
+{
+  index: 8, /* <-- */
+  layout: struct([
+    u32('instruction'),
+    ns64('space'),
+  ])
+}
 ```
 
 `index` is set to 8 because the function `allocate` is in the 8th position in the instruction enum for `SystemProgram`.
@@ -221,17 +227,31 @@ pub enum SystemInstruction {
 }
 ```
 
+Next up is `u32('instruction')`.
+
 ```javascript
-u32('instruction')
+{
+  index: 8, 
+  layout: struct([
+    u32('instruction'), /* <-- */
+    ns64('space'),
+  ])
+}
 ```
 
 The `layout` in the allocate struct must always have `u32('instruction')` first when you are using it to call an instruction.
 
 ```javascript
-ns64('space')
+{
+  index: 8, 
+  layout: struct([
+    u32('instruction'), 
+    ns64('space'), /* <-- */
+  ])
+}
 ```
 
-`ns64('space')` is the argument for the `allocate` function. You can see in the original `allocate` function in Rust that space was of the type `u64`. `u64` is an unsigned 64bit integer. Javascript/Typescript by default only provides up to 53bit integers. `ns64` comes from `@solana/buffer-layout` to help with type conversions between Rust and Javascript. You can find more type conversions between Rust/C and Javascript at [solana-labs/buffer-layout](https://github.com/solana-labs/buffer-layout).
+`ns64('space')` is the argument for the `allocate` function. You can see in the original `allocate` function in Rust that space was of the type `u64`. `u64` is an unsigned 64bit integer. Javascript by default only provides up to 53bit integers. `ns64` comes from `@solana/buffer-layout` to help with type conversions between Rust and Javascript. You can find more type conversions between Rust and Javascript at [solana-labs/buffer-layout](https://github.com/solana-labs/buffer-layout).
 
 ```javascript
 let data = Buffer.alloc(allocateStruct.layout.span);
@@ -239,7 +259,7 @@ let layoutFields = Object.assign({instruction: allocateStruct.index}, params);
 allocateStruct.layout.encode(layoutFields, data);
 ```
 
-Using the previously created bufferLayout, we can allocate a data buffer. We then assign our params `{ space: 100 }` so that it maps correctly to the layout, and encodes it to the data buffer. Now the data is ready to be sent to be program.
+Using the previously created bufferLayout, we can allocate a data buffer. We then assign our params `{ space: 100 }` so that it maps correctly to the layout, and encode it to the data buffer. Now the data is ready to be sent to the program.
 
 ```javascript
 allocateTransaction.add(new web3.TransactionInstruction({
