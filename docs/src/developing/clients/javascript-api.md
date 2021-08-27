@@ -307,3 +307,7 @@ allocateTransaction.add(new web3.TransactionInstruction({
 
 web3.sendAndConfirmTransaction(connection, allocateTransaction, [keypair]);
 ```
+
+## Source Documentation
+
+For more information about solana-web3, please see the [source documentation](https://solana-labs.github.io/solana-web3.js/index.html)
